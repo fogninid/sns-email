@@ -1,6 +1,7 @@
 import io
-import os
+import re
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -11,6 +12,15 @@ from sns_email.deliver import sendmail_deliver
 @pytest.fixture(autouse=True)
 def reset():
     counter._counter.cache_clear()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def mock_signing(test_data_dir):
+    with mock.patch("sns_email.sns_signature._valid_sns_url", new=re.compile("https://.*")), \
+         mock.patch("sns_email.sns_signature.requests") as m:
+        with open(test_data_dir / "signing-key.pem", "rb") as f:
+            m.get().__enter__().content = f.read(4096)
+        yield
 
 
 @pytest.fixture
@@ -53,6 +63,6 @@ cat > '{tmp_path}'/out/rec
     return mock_sendmail_deliver
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_data_dir() -> Path:
     return Path(__file__).parent / "test-data"

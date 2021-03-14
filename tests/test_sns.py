@@ -1,4 +1,5 @@
 import threading
+from unittest import mock
 
 import prometheus_client
 import prometheus_client.parser
@@ -60,11 +61,12 @@ def mock_delivering_test_server(mock_deliver) -> FixtureTestServer:
 
 
 def test_metrics(capturing_test_server):
-    response = requests.get(capturing_test_server.server_url)
-    assert response.ok, "status=%d, text=%s" % (response.status_code, response.text)
+    with requests.get(capturing_test_server.server_url) as response:
+        response_text = response.text
+        assert response.ok, "status=%d, text=%s" % (response.status_code, response_text)
 
     metric_names = set([
-        metric.name for metric in prometheus_client.parser.text_string_to_metric_families(response.text)
+        metric.name for metric in prometheus_client.parser.text_string_to_metric_families(response_text)
         if metric.name.startswith("sns_")
     ])
 
@@ -76,16 +78,27 @@ def test_request(capturing_test_server, test_data_dir):
     capturing_test_server.received.clear()
 
     with open(test_data_dir / "sns-notification", "rb") as f:
-        response = requests.post(capturing_test_server.server_url, data=f)
-    assert response.ok, "status=%d, text=%s" % (response.status_code, response.text)
+        with requests.post(capturing_test_server.server_url, data=f) as response:
+            assert response.ok, "status=%d, text=%s" % (response.status_code, response.text)
 
     assert len(capturing_test_server.received) == 1
 
 
+def test_request_ignores_bad_signature(capturing_test_server, test_data_dir):
+    capturing_test_server.received.clear()
+
+    with mock.patch("sns_email.sns._logger") as m:
+        with requests.post(capturing_test_server.server_url, json={}) as response:
+            assert response.ok, "status=%d, text=%s" % (response.status_code, response.text)
+        m.warning.assert_called_with("ignoring message with invalid signature. content=%s", b'{}', exc_info=True)
+
+    assert len(capturing_test_server.received) == 0
+
+
 def test_request_and_deliver(mock_delivering_test_server, test_data_dir):
     with open(test_data_dir / "sns-notification", "rb") as f:
-        response = requests.post(mock_delivering_test_server.server_url, data=f)
-    assert response.ok, "status=%d, text=%s" % (response.status_code, response.text)
+        with requests.post(mock_delivering_test_server.server_url, data=f) as response:
+            assert response.ok, "status=%d, text=%s" % (response.status_code, response.text)
 
     assert len(mock_delivering_test_server.received) == 1
     with open(test_data_dir / "email", "rb") as f:
@@ -94,10 +107,10 @@ def test_request_and_deliver(mock_delivering_test_server, test_data_dir):
     # only one duplicate is accepted
     for i in range(10):
         with open(test_data_dir / "sns-notification", "rb") as f:
-            response = requests.post(mock_delivering_test_server.server_url, data=f)
-        if i > 0:
-            assert not response.ok, "i=%d, status=%d, text=%s" % (i, response.status_code, response.text)
-        else:
-            assert response.ok, "i=%d, status=%d, text=%s" % (i, response.status_code, response.text)
+            with requests.post(mock_delivering_test_server.server_url, data=f) as response:
+                if i > 0:
+                    assert not response.ok, "i=%d, status=%d, text=%s" % (i, response.status_code, response.text)
+                else:
+                    assert response.ok, "i=%d, status=%d, text=%s" % (i, response.status_code, response.text)
 
     assert len(mock_delivering_test_server.received) == 2

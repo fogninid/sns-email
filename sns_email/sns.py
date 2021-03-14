@@ -8,6 +8,7 @@ import prometheus_client
 
 from sns_email import logger, _counter_errors
 from sns_email.receive import MessageReceiver
+from sns_email.sns_signature import sns_verify_signature, InvalidSnsSignatureException
 
 _logger = logger.getChild('sns')
 
@@ -24,11 +25,14 @@ class SnsHandler(BaseHTTPRequestHandler):
             _logger.debug("processing message. headers=%s, content=%s", self.headers, content_bytes)
             try:
                 body = json.loads(content_bytes)
+                sns_verify_signature(body)
             except json.decoder.JSONDecodeError:
                 _logger.warning("ignoring invalid message. content=%s", content_bytes, exc_info=True)
                 _counter_errors.labels('sns').inc()
+            except InvalidSnsSignatureException:
+                _logger.warning("ignoring message with invalid signature. content=%s", content_bytes, exc_info=True)
+                _counter_errors.labels('sns').inc()
             else:
-                # TODO validate message
                 if self.receiver is not None:
                     self.receiver.receive(body)
                 else:
