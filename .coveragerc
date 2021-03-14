@@ -1,0 +1,11 @@
+[run]
+branch = True
+omit = 
+    .pyenv/*
+    */test_*
+    */conftest.py
+    */.local/*
+
+[html]
+directory = coverage_html_report
+

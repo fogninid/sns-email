@@ -1,0 +1,5 @@
+/test-data
+coverage_html_report
+.coverage
+__pycache__
+*.egg-info
