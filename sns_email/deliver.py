@@ -7,7 +7,7 @@ from sns_email import logger
 
 _logger = logger.getChild('deliver')
 
-_counter_received = prometheus_client.Counter('sns_email_received_total', 'Received total', ['destination'])
+_counter_received = prometheus_client.Counter('sns_email_received_total', 'Received total')
 
 
 class sendmail_deliver:
@@ -39,5 +39,4 @@ class sendmail_deliver:
             raise Exception(
                 "failed delivery. returncode={}, stdout={}, stderr={}".format(self.p.returncode, outs, errs))
         else:
-            for r in self.recipients:
-                _counter_received.labels(r).inc()
+            _counter_received.inc()
