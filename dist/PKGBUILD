@@ -1,0 +1,32 @@
+pkgname=python-sns_email
+pkgver=0.3.0
+pkgrel=1
+
+pkgdesc="AWS SNS Email receiver"
+arch=('any')
+license=('GPL')
+
+depends=('python' 'python-boto3' 'python-prometheus_client' 'python-configargparse' 'python-cryptography')
+makedepends=('python-setuptools' 'git')
+checkdepends=('python-pytest' 'python-pip')
+
+source=("${pkgname}::git+https://github.com/fogninid/sns-email?signed#tag=v${pkgver}")
+sha512sums=(SKIP)
+
+validpgpkeys=('5A2E16E8EA1C448FCC23106E0F49E10A7816C070')
+
+build() {
+  cd "${pkgname}"
+  python setup.py build
+}
+
+check() {
+  cd "${pkgname}"
+  pip install .
+  PYTHONDONTWRITEBYTECODE=1 pytest
+}
+
+package() {
+  cd "${pkgname}"
+  python setup.py install --root="$pkgdir" --skip-build --optimize=1
+}
