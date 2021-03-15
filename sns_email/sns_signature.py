@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import base64
 import binascii
+import functools
 import re
 
 import requests
@@ -21,6 +22,7 @@ class InvalidSnsSignatureException(Exception):
     pass
 
 
+@functools.lru_cache(maxsize=5)
 def _load_certificate(url) -> Certificate:
     with requests.get(url, timeout=30) as r:
         r.raise_for_status()
