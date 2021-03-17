@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="sns_email",
-    version="0.3.0",
+    version="0.3.1",
     author="https://github.com/fogninid",
     url="https://github.com/fogninid/sns-email",
     python_requires=">=3.8",

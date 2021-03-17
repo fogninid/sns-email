@@ -1,5 +1,5 @@
 pkgname=python-sns_email
-pkgver=0.3.0
+pkgver=0.3.1
 pkgrel=1
 
 pkgdesc="AWS SNS Email receiver"
