@@ -4,6 +4,7 @@ import binascii
 import functools
 import re
 
+import prometheus_client
 import requests
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -17,18 +18,25 @@ _logger = logger.getChild("sns.signature")
 
 _valid_sns_url = re.compile(r"^https://sns\.[-a-z0-9]+\.amazonaws\.com/")
 
+_certificate_time = prometheus_client.Histogram('sns_email_sns_signature_certificate_seconds',
+                                                'Time spent loading certificate')
+_signature_time = prometheus_client.Histogram('sns_email_sns_signature_seconds', 'Time spent computing signature')
+_verify_time = prometheus_client.Histogram('sns_email_sns_verify_seconds', 'Time spent verifying signature')
+
 
 class InvalidSnsSignatureException(Exception):
     pass
 
 
 @functools.lru_cache(maxsize=5)
+@_certificate_time.time()
 def _load_certificate(url) -> Certificate:
     with requests.get(url, timeout=30) as r:
         r.raise_for_status()
         return x509.load_pem_x509_certificate(r.content)
 
 
+@_signature_time.time()
 def sns_verify_signature(body):
     for name in ('Type', 'Signature', 'SigningCertURL', 'SignatureVersion'):
         if name not in body:
@@ -68,6 +76,7 @@ def sns_verify_signature(body):
 
     public_key = _load_certificate(signing_cert_url).public_key()
     try:
-        public_key.verify(signature=signature, data=data, algorithm=SHA1(), padding=PKCS1v15())
+        with _verify_time.time():
+            public_key.verify(signature=signature, data=data, algorithm=SHA1(), padding=PKCS1v15())
     except InvalidSignature as e:
         raise InvalidSnsSignatureException("Invalid signature", e)

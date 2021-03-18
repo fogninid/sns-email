@@ -8,7 +8,7 @@ import sns_email.deliver
 from sns_email import logger, _counter_errors
 from sns_email.counter import count
 
-receive_time = prometheus_client.Summary('sns_email_receive_seconds', 'Time spent processing receive')
+_receive_time = prometheus_client.Histogram('sns_email_receive_seconds', 'Time spent processing receive')
 
 _logger = logger.getChild('receive')
 
@@ -20,7 +20,7 @@ class MessageReceiver:
         self.boto_session = boto_session
         self.rex = rex
 
-    @receive_time.time()
+    @_receive_time.time()
     def receive_mail(self, message):
         mail = message['mail']
 

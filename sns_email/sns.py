@@ -13,11 +13,13 @@ from sns_email.sns_signature import sns_verify_signature, InvalidSnsSignatureExc
 _logger = logger.getChild('sns')
 
 _counter_sns = prometheus_client.Counter('sns_email_sns_received_total', 'SNS received total')
+_counter_sns_time = prometheus_client.Histogram('sns_email_sns_handle_seconds', 'SNS HTTP handle time')
 
 
 class SnsHandler(BaseHTTPRequestHandler):
     receiver: MessageReceiver = None
 
+    @_counter_sns_time.time()
     def do_POST(self):
         content_length = int(self.headers['Content-Length'])
         try:
