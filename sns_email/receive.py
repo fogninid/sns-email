@@ -25,44 +25,50 @@ class MessageReceiver:
         mail = message['mail']
 
         message_id = mail['messageId']
-        dup_count = count(message_id)
-        if dup_count > 2:
-            _logger.warning("aborting receiving a duplicate message. message_id=%s, dup_count=%s", message_id,
-                            dup_count)
-            _counter_errors.labels('receive_duplicate').inc()
-            raise Exception("duplicate message")
-        elif dup_count > 1:
-            _logger.warning("receiving duplicate message. message_id=%s", message_id)
-            _counter_errors.labels('receive_duplicate').inc()
+        with count(message_id) as dup_check:
+            if dup_check:
+                _logger.info("ignoring duplicate message that was fully processed. message_id=%s", message_id)
+                return
 
-        receipt = message['receipt']
-        recipients = [d for d in receipt['recipients'] if self.rex.match(d)]
-        source = mail['source']
-        if not recipients:
-            _logger.info("ignoring mail with no local recipient. message=%s", message)
-            _counter_errors.labels('receive').inc()
-            return
-        mail_from = source
-        if 'commonHeaders' in mail and 'from' in mail['commonHeaders']:
-            mail_from = mail['commonHeaders']['from']
+            dup_count = dup_check.value
+            if dup_count > 2:
+                _logger.warning(
+                    "aborting receiving a duplicate message that already failed. message_id=%s, dup_count=%s",
+                    message_id, dup_count)
+                _counter_errors.labels('receive_duplicate').inc()
+                raise Exception("duplicate message")
+            elif dup_count > 1:
+                _logger.warning("receiving duplicate message. message_id=%s", message_id)
+                _counter_errors.labels('receive_duplicate').inc()
 
-        if 'content' in message:
-            with self.deliver(source, recipients) as f:
-                f.write(message['content'])
-        elif 'action' in receipt and 'type' in receipt['action']:
-            if 'S3' == receipt['action']['type']:
-                with self.deliver(source, recipients) as f:
-                    self.boto_session().client('s3').download_fileobj(receipt['action']['bucketName'],
-                                                                      receipt['action']['objectKey'], f)
-            else:
-                _logger.info("ignoring unknown receipt type. message=%s", message)
+            receipt = message['receipt']
+            recipients = [d for d in receipt['recipients'] if self.rex.match(d)]
+            source = mail['source']
+            if not recipients:
+                _logger.info("ignoring mail with no local recipient. message=%s", message)
                 _counter_errors.labels('receive').inc()
-        else:
-            _logger.info("ignoring unknown receipt. message=%s", message)
-            _counter_errors.labels('receive').inc()
+                return
+            mail_from = source
+            if 'commonHeaders' in mail and 'from' in mail['commonHeaders']:
+                mail_from = mail['commonHeaders']['from']
 
-        _logger.info("received email. source=%s, mail_from=%s, recipients=%s, message_id=%s",
-                     source, mail_from, recipients, message_id)
+            if 'content' in message:
+                with self.deliver(source, recipients) as f:
+                    f.write(message['content'])
+            elif 'action' in receipt and 'type' in receipt['action']:
+                if 'S3' == receipt['action']['type']:
+                    with self.deliver(source, recipients) as f:
+                        self.boto_session().client('s3').download_fileobj(receipt['action']['bucketName'],
+                                                                          receipt['action']['objectKey'], f)
+                else:
+                    _logger.info("ignoring unknown receipt type. message=%s", message)
+                    _counter_errors.labels('receive').inc()
+            else:
+                _logger.info("ignoring unknown receipt. message=%s", message)
+                _counter_errors.labels('receive').inc()
+
+            _logger.info("received email. source=%s, mail_from=%s, recipients=%s, message_id=%s",
+                         source, mail_from, recipients, message_id)
 
     def receive(self, body: dict):
         if body['Type'] == 'Notification':

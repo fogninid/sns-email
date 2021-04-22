@@ -104,13 +104,17 @@ def test_request_and_deliver(mock_delivering_test_server, test_data_dir):
     with open(test_data_dir / "email", "rb") as f:
         assert mock_delivering_test_server.received[0] == f.read().decode("utf-8")
 
-    # only one duplicate is accepted
     for i in range(10):
         with open(test_data_dir / "sns-notification", "rb") as f:
             with requests.post(mock_delivering_test_server.server_url, data=f) as response:
-                if i > 0:
-                    assert not response.ok, "i=%d, status=%d, text=%s" % (i, response.status_code, response.text)
-                else:
-                    assert response.ok, "i=%d, status=%d, text=%s" % (i, response.status_code, response.text)
+                assert response.ok, "i=%d, status=%d, text=%s" % (i, response.status_code, response.text)
 
-    assert len(mock_delivering_test_server.received) == 2
+    assert len(mock_delivering_test_server.received) == 1
+
+
+def test_request_and_deliver_failure(mock_delivering_test_server, mock_deliver, test_data_dir):
+    mock_deliver.failure = ValueError()
+
+    with open(test_data_dir / "sns-notification", "rb") as f:
+        with requests.post(mock_delivering_test_server.server_url, data=f) as response:
+            assert not response.ok, "status=%d, text=%s" % (response.status_code, response.text)

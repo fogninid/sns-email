@@ -27,6 +27,7 @@ def mock_signing(test_data_dir):
 def mock_deliver():
     class mock_deliver:
         delivered = []
+        failure = None
 
         def __init__(self, source, recipients):
             self.source = source
@@ -37,8 +38,9 @@ def mock_deliver():
             return self.string_io
 
         def __exit__(self, exc_type, exc_val, exc_tb):
+            if self.failure is not None:
+                raise self.failure
             self.delivered.append(self.string_io.getvalue())
-            pass
 
     return mock_deliver
 
