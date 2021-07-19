@@ -1,6 +1,6 @@
 pytest~=6.2.2
 requests~=2.26.0
-setuptools~=57.2.0
+setuptools~=57.4.0
 boto3~=1.18.1
 prometheus_client~=0.11.0
 mock~=4.0.3
