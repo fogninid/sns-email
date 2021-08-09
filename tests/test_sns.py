@@ -26,7 +26,7 @@ class test_server:
 
     def _run(self):
         with self._server as server:
-            server.serve_forever()
+            server.serve_forever(poll_interval=0.2)
 
     def __enter__(self):
         self._thread = threading.Thread(target=self._run)
@@ -46,14 +46,14 @@ class FixtureTestServer:
         self.server_url = "http://%s:%d/" % server_address
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def capturing_test_server() -> FixtureTestServer:
     received = []
     with test_server(received.append, ("127.0.0.1", 0)) as t:
         yield FixtureTestServer(t.server_address, received)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mock_delivering_test_server(mock_deliver) -> FixtureTestServer:
     receiver = MessageReceiver(deliver=mock_deliver)
     with test_server(receiver, ("127.0.0.1", 0)) as t:

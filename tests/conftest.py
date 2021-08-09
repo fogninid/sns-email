@@ -23,7 +23,7 @@ def mock_signing(test_data_dir):
         yield
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mock_deliver():
     class mock_deliver:
         delivered = []
