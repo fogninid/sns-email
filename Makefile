@@ -7,7 +7,7 @@ all:
 $(PYENV):
 	@virtualenv $(PYENV)
 	@$(PYENV)/bin/pip install -r requirements.txt
-	@$(PYENV)/bin/pip install --use-feature=in-tree-build -e .
+	@$(PYENV)/bin/pip install -e .
 
 .PHONY: test
 test: $(PYENV)
