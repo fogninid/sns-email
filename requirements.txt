@@ -1,5 +1,5 @@
 pytest~=6.2.5
-requests~=2.26.0
+requests~=2.28.1
 setuptools~=58.5.3
 boto3~=1.18.30
 prometheus_client~=0.14.1
