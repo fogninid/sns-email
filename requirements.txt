@@ -6,4 +6,4 @@ prometheus_client~=0.14.1
 mock~=4.0.3
 coverage~=6.1
 ConfigArgParse~=1.5
-cryptography~=37.0.4
+cryptography~=38.0.1
