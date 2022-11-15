@@ -6,7 +6,7 @@ pkgdesc="AWS SNS Email receiver"
 arch=('any')
 license=('GPL')
 
-depends=('python' 'python-boto3' 'python-prometheus_client' 'python-configargparse' 'python-cryptography')
+depends=('python' 'python-boto3' 'python-prometheus_client' 'python-configargparse' 'python-cryptography' 'python-requests')
 makedepends=('python-setuptools' 'git')
 checkdepends=('python-pytest' 'python-pip')
 
