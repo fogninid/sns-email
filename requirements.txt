@@ -4,6 +4,6 @@ setuptools~=65.5.1
 boto3~=1.26.10
 prometheus_client~=0.15.0
 mock~=4.0.3
-coverage~=6.5
+coverage~=7.1
 ConfigArgParse~=1.5
 cryptography~=38.0.3
