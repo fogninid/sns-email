@@ -8,7 +8,7 @@ env:
   REGISTRY: ghcr.io
   REPOSITORY: ${{ github.repository }}
   CONTAINER_BUILD_PATH: .
-  IMAGE_NAME: sns-mail
+  IMAGE_NAME: sns-email
   IMAGE_TAG_STRIP: sns-email-
 
 permissions:
