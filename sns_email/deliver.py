@@ -11,7 +11,7 @@ _counter_received = prometheus_client.Counter('sns_email_received_total', 'Recei
 
 
 class sendmail_deliver:
-    def __init__(self, source, recipients, sendmail_path="/usr/bin/sendmail"):
+    def __init__(self, source, recipients, sendmail_path="/usr/sbin/sendmail"):
         self.p = subprocess.Popen([sendmail_path, "-r", source, "-i"] + recipients,
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.recipients = recipients
