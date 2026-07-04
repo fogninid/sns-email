@@ -1,0 +1,50 @@
+name: mail-image-latest
+on:
+  push:
+    tags:
+      - 'sns-email-*'
+
+env:
+  REGISTRY: ghcr.io
+  REPOSITORY: ${{ github.repository }}
+  CONTAINER_BUILD_PATH: .
+  IMAGE_NAME: sns-mail
+  IMAGE_TAG_STRIP: sns-email-
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup variables
+        id: variables
+        run: |
+          REF_NAME=${{ github.ref_name }}
+          TAG="${REF_NAME#$IMAGE_TAG_STRIP}"
+          echo "image_tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@4574d27a4764455b42196d70a065bc6853246a25 # v3.4.0
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+        with:
+          buildkitd-flags: "--debug"
+      - name: Build multi-arch container image
+        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 # v6.13.0
+        with:
+          push: true
+          builder: ${{ steps.buildx.outputs.name }}
+          context: "{{defaultContext}}:${{ env.CONTAINER_BUILD_PATH }}"
+          file: "Containerfile"
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ steps.variables.outputs.image_tag }}

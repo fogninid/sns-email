@@ -5,7 +5,7 @@ all:
 	@echo nothing to do
 
 $(PYENV):
-	@virtualenv $(PYENV)
+	@python3 -m venv $(PYENV)
 	@$(PYENV)/bin/pip install -r requirements.txt
 	@$(PYENV)/bin/pip install -e .
 

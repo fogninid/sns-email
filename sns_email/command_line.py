@@ -1,6 +1,8 @@
 import contextlib
 import logging
 import re
+import signal
+import threading
 
 import configargparse
 
@@ -53,11 +55,17 @@ def main(args=None):
         httpd = SnsServer(receiver=receiver, server_address=(_args.address, _args.port))
         ctx.enter_context(httpd)
 
+        def shutdown(signum, frame):
+            logger.info("receiving %s", signal.strsignal(signum))
+            httpd.shutdown()
+
+        signal.signal(signal.SIGTERM, shutdown)
+        signal.signal(signal.SIGINT, shutdown)
+
         logger.info("listening on %s", httpd.server_address)
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            pass
+        thread = threading.Thread(target=httpd.serve_forever,name="sns")
+        thread.start()
+        thread.join()
         logger.info("shutting down.")
 
 
